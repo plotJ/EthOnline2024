@@ -1,0 +1,65 @@
+# VoteChain Nexus Development Roadmap
+
+## 1. Set up the development environment
+- Initialize a new Node.js project
+- Install necessary dependencies: ethers.js, @hashgraph/sdk, @signprotocol/sdk
+- Set up a .env file for storing sensitive information
+
+## 2. Implement wallet connection
+- Add functionality to the "Connect Wallet" button
+- Use ethers.js to handle wallet connection
+- Store the connected address in app state
+- Update UI to show connected/disconnected state
+
+## 3. Create and deploy the Voting smart contract
+- Write the Voting contract in Solidity
+- Include functions for creating ballots, casting votes, and retrieving results
+- Use Hardhat to compile and deploy the contract to Hedera's testnet
+- Save the deployed contract address and ABI
+
+## 4. Integrate Sign Protocol for attestations
+- Set up Sign Protocol in your project
+- Create a function to generate a voter attestation when a wallet connects
+- Implement a function to verify attestations before allowing votes
+
+## 5. Set up Hedera Consensus Service (HCS)
+- Initialize Hedera SDK in your project
+- Create a topic for your voting application using HCS
+- Implement functions to submit messages (votes) to the HCS topic
+- Create a service to listen for and process HCS messages
+
+## 6. Connect front-end to smart contract
+- Use ethers.js to create a contract instance
+- Implement functions to call contract methods (createBallot, castVote, getResults)
+- Update the UI to display active ballots from the contract
+- Enable the "Vote Now" button when a wallet is connected and attestation is verified
+
+## 7. Implement voting functionality
+- Create a modal or form for casting votes
+- Send transactions to the smart contract when a user votes
+- Record each vote on HCS after it's accepted by the smart contract
+
+## 8. Develop results retrieval and display
+- Create functions to fetch voting results from the smart contract
+- Implement real-time updates using HCS messages
+- Update the Results table in the UI with live data
+
+## 9. Error handling and user feedback
+- Implement error catching for all blockchain interactions
+- Create user-friendly error messages and success notifications
+- Add loading states for blockchain transactions
+
+## 10. Testing and refinement
+- Test all functions thoroughly: wallet connection, attestation, voting, results retrieval
+- Ensure proper handling of edge cases
+- Refine UI/UX based on testing results
+
+## 11. Final touches
+- Implement any missing features from the original design
+- Optimize performance, especially for real-time updates
+- Ensure responsive design works correctly on various devices
+
+## 12. Documentation
+- Write clear instructions for using the dApp
+- Document the smart contract functions and HCS topic usage
+- Prepare a project submission detailing the technologies used and challenges overcome
