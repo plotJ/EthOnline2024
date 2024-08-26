@@ -1,5 +1,10 @@
-import Version2 from '../components/version2'
+import React from 'react';
+import ResultsTable from '../components/ResultsTable';
 
-   export default function Home() {
-     return <Version2 />
-   }
+export default function Home() {
+  return (
+    <main>
+      <ResultsTable />
+    </main>
+  );
+}

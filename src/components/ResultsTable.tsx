@@ -3,15 +3,16 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardHeader, CardContent, CardFooter } from "@/components/ui/card"
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table"
+import { WalletConnection } from "@/components/WalletConnection"
 
-const Version2: React.FC = () => {
+const ResultsTable: React.FC = () => {
   return (
     <div className="flex flex-col min-h-screen">
       <header className="bg-[#1c1e21] text-white px-4 md:px-6 py-3 flex items-center justify-between">
         <Link href="#" className="text-2xl font-bold">
           VoteChain Nexus
         </Link>
-        <Button className="rounded-full px-4 py-2 text-sm font-medium">Connect Wallet</Button>
+        <WalletConnection />
       </header>
       <nav className="bg-[#2c2f34] text-white px-4 md:px-6 py-3 flex items-center justify-center space-x-6">
         <Link href="#" className="hover:underline">
@@ -174,4 +175,4 @@ const ClockIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => {
   )
 }
 
-export default Version2;
+export default ResultsTable;
