@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { ethers } from 'ethers';
+import { generateVoterAttestation } from '@/utils/attestation'; // Import the function
 
 export function useWallet() {
   const [address, setAddress] = useState<string | null>(null);
@@ -13,6 +14,9 @@ export function useWallet() {
         const walletAddress = await signer.getAddress();
         setAddress(walletAddress);
         console.log('Wallet connected:', walletAddress);
+
+        // Generate voter attestation
+        await generateVoterAttestation(walletAddress, /* ballotId */ 0); // Replace with actual ballotId if available
       } catch (error) {
         console.error('Failed to connect wallet:', error);
       }

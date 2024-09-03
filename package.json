@@ -9,8 +9,9 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "@ethsign/sp-sdk": "^0.7.1",
+    "@ethsign/sp-sdk": "^0.7.2",
     "@hashgraph/sdk": "^2.50.0",
+    "@heroicons/react": "^2.1.5",
     "@metamask/providers": "^17.1.2",
     "@radix-ui/react-label": "^2.1.0",
     "@radix-ui/react-slot": "^1.1.0",
@@ -22,7 +23,8 @@
     "react": "^18",
     "react-dom": "^18",
     "tailwind-merge": "^2.5.2",
-    "tailwindcss-animate": "^1.0.7"
+    "tailwindcss-animate": "^1.0.7",
+    "viem": "^2.21.1"
   },
   "devDependencies": {
     "@nomicfoundation/hardhat-ethers": "^3.0.7",

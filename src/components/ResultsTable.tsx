@@ -1,11 +1,29 @@
-import React from "react";
-import Link from "next/link"
-import { Button } from "@/components/ui/button"
-import { Card, CardHeader, CardContent, CardFooter } from "@/components/ui/card"
-import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table"
-import { WalletConnection } from "@/components/WalletConnection"
+'use client';
+
+import React, { useEffect, useState } from 'react';
+import Link from 'next/link';
+import { Button } from "@/components/ui/button";
+import { Card, CardHeader, CardContent, CardFooter } from "@/components/ui/card";
+import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table";
+import { ClockIcon } from '@heroicons/react/24/outline'; // Keep this import
+import { WalletConnection } from './WalletConnection';
+import { getVoteAttestations } from '@/utils/attestation';
+import VotingComponent from '../components/VotingComponent';
 
 const ResultsTable: React.FC = () => {
+  const [results, setResults] = useState<any[]>([]); // Define the type based on your data structure
+
+  useEffect(() => {
+    const fetchResults = async () => {
+      console.log("Fetching voting results...");
+      const data = await getVoteAttestations(/* ballotId */); // Replace with actual ballotId
+      console.log("Voting results fetched:", data);
+      setResults(data);
+    };
+
+    fetchResults();
+  }, []);
+
   return (
     <div className="flex flex-col min-h-screen">
       <header className="bg-[#1c1e21] text-white px-4 md:px-6 py-3 flex items-center justify-between">
@@ -115,24 +133,14 @@ const ResultsTable: React.FC = () => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              <TableRow>
-                <TableCell>Ballot 1</TableCell>
-                <TableCell>2,345</TableCell>
-                <TableCell>2023-06-30</TableCell>
-                <TableCell>Option A</TableCell>
-              </TableRow>
-              <TableRow>
-                <TableCell>Ballot 2</TableCell>
-                <TableCell>1,789</TableCell>
-                <TableCell>2023-07-07</TableCell>
-                <TableCell>Option B</TableCell>
-              </TableRow>
-              <TableRow>
-                <TableCell>Ballot 3</TableCell>
-                <TableCell>987</TableCell>
-                <TableCell>2023-07-21</TableCell>
-                <TableCell>Pending</TableCell>
-              </TableRow>
+              {results.map((result, index) => (
+                <TableRow key={index}>
+                  <TableCell>{result.ballot}</TableCell>
+                  <TableCell>{result.totalVotes}</TableCell>
+                  <TableCell>{result.endTime}</TableCell>
+                  <TableCell>{result.outcome}</TableCell>
+                </TableRow>
+              ))}
             </TableBody>
           </Table>
         </section>
@@ -152,26 +160,6 @@ const ResultsTable: React.FC = () => {
         <div className="text-sm text-gray-400">&copy; 2024 VoteChain Nexus. All rights reserved.</div>
       </footer>
     </div>
-  )
-}
-
-const ClockIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => {
-  return (
-    <svg
-      {...props}
-      xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <circle cx="12" cy="12" r="10" />
-      <polyline points="12 6 12 12 16 14" />
-    </svg>
   )
 }
 

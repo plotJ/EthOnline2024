@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { ethers } from 'ethers';
 import { Button } from './ui/button';
+import { createVoterAttestation } from '@/utils/attestation'; // Import the function
 
 // Custom hook for wallet functionality
 export function useWallet() {
@@ -17,6 +18,10 @@ export function useWallet() {
         const walletAddress = await signer.getAddress();
         setAddress(walletAddress);
         console.log('Wallet connected:', walletAddress);
+
+        // Create voter attestation
+        await createVoterAttestation(walletAddress); // Create attestation on connect
+        console.log("Voter attestation created for wallet:", walletAddress);
       } catch (error) {
         console.error('Failed to connect wallet:', error);
       }
