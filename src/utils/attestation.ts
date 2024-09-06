@@ -5,30 +5,105 @@ import {
     delegateSignAttestation,
     delegateSignRevokeAttestation,
     delegateSignSchema,
+    OnChainSchema,
+    DataLocationOnChain,
 } from '@ethsign/sp-sdk';
-//import { privateKeyToAccount } from 'viem/accounts'; // Ensure this is imported
-import { VoterAttestation } from "../schemas/voterAttestationSchema";
-import client from '@/lib/signProtocol'; // Ensure this imports the correct client
+import { privateKeyToAccount, type PrivateKeyAccount } from 'viem/accounts';
 
-const signClient = new SignProtocolClient(SpMode.OnChain, {
-    chain: EvmChains.sepolia,
-//    account: privateKeyToAccount('your-private-key'), // optional
+const PRIVATE_KEY = process.env.WALLET_PRIVATE_KEY as `0x${string}`;
+const CHAIN = process.env.CHAIN_ID as keyof typeof EvmChains;
+
+if (!PRIVATE_KEY || !CHAIN) {
+    throw new Error('WALLET_PRIVATE_KEY and CHAIN_ID must be set in environment variables');
+}
+
+const account = privateKeyToAccount(PRIVATE_KEY);
+
+const client = new SignProtocolClient(SpMode.OnChain, {
+    chain: EvmChains[CHAIN],
+    account: account,
 });
 
-export async function generateVoterAttestation(walletAddress: string, ballotId: number): Promise<VoterAttestation> {
-    const attestation = await signClient.createAttestation({
-        subject: walletAddress,
-        data: { ballotId, timestamp: Date.now() },
-    });
-    return attestation;
+let schemaId: string | null = null;
+
+export async function createVoterAttestationSchema(delegationAccount?: PrivateKeyAccount) {
+    if (schemaId) return schemaId;
+
+    try {
+        const schemaData: OnChainSchema = {
+            name: "VoterAttestation",
+            data: [
+                { name: "walletAddress", type: "address" },
+                { name: "eligibleToVote", type: "bool" },
+                { name: "registrationTimestamp", type: "uint256" }
+            ],
+            registrant: account.address,
+            dataLocation: DataLocationOnChain.ONCHAIN,
+        };
+
+        let schema;
+        if (delegationAccount) {
+            const delegationInfo = await delegateSignSchema(schemaData, {
+                chain: EvmChains[CHAIN],
+                delegationAccount: delegationAccount,
+            });
+            schema = await client.createSchema(delegationInfo.schema);
+        } else {
+            schema = await client.createSchema(schemaData);
+        }
+
+        console.log("Schema created successfully:", schema.schemaId);
+        schemaId = schema.schemaId;
+        return schemaId;
+    } catch (error) {
+        console.error("Error creating schema:", error);
+        throw error;
+    }
+}
+
+export async function createVoterAttestation(walletAddress: string, delegationAccount?: PrivateKeyAccount) {
+    try {
+        const schemaId = await createVoterAttestationSchema();
+        const attestationData = {
+            schemaId: schemaId,
+            data: {
+                walletAddress: walletAddress,
+                eligibleToVote: true,
+                registrationTimestamp: Math.floor(Date.now() / 1000)
+            } as const,  // Use 'as const' to preserve literal types
+            indexingValue: walletAddress.toLowerCase()
+        };
+
+        let attestation;
+        if (delegationAccount) {
+            const delegationInfo = await delegateSignAttestation(attestationData, {
+                chain: EvmChains[CHAIN],
+                delegationAccount: delegationAccount,
+            });
+            attestation = await client.createAttestation(delegationInfo.attestation);
+        } else {
+            attestation = await client.createAttestation(attestationData);
+        }
+
+        console.log("Voter attestation created successfully");
+        console.log("Attestation ID:", attestation.attestationId);
+        return attestation.attestationId;
+    } catch (error) {
+        console.error("Error creating voter attestation:", error);
+        throw error;
+    }
 }
 
 export async function verifyVoterAttestation(walletAddress: string) {
     try {
-        const response = await client.getAttestation(walletAddress.toLowerCase());
-        if (response && response.data && response.data.eligibleToVote) {
-            console.log("Voter attestation verified successfully");
-            return true;
+        const attestation = await client.getAttestation(walletAddress.toLowerCase());
+        
+        if (attestation && typeof attestation.data === 'object' && !Array.isArray(attestation.data)) {
+            const data = attestation.data as { [key: string]: any };
+            if ('eligibleToVote' in data && data.eligibleToVote === true && !attestation.revoked) {
+                console.log("Voter attestation verified successfully");
+                return true;
+            }
         }
         console.log("Voter attestation not found or ineligible");
         return false;
@@ -38,60 +113,27 @@ export async function verifyVoterAttestation(walletAddress: string) {
     }
 }
 
-export async function fetchAttestation(walletAddress: string): Promise<VoterAttestation | null> {
-    const attestation = await signClient.getAttestation(walletAddress);
-    return attestation ? attestation.data : null; // Assuming the data contains the schema
-}
-
-export async function createVoterAttestationSchema() {
-    const schema = await client.createSchema({
-        name: "VoterAttestation",
-        data: [
-            { name: "walletAddress", type: "address" },
-            { name: "eligibleToVote", type: "bool" },
-            { name: "registrationTimestamp", type: "uint256" }
-        ]
-    });
-    return schema.schemaId;
-}
-
-export async function createVoterAttestation(walletAddress: string) {
+export async function revokeVoterAttestation(attestationId: string, delegationAccount?: PrivateKeyAccount) {
     try {
-        const schemaId = await createVoterAttestationSchema(); // Ensure schema is created
-        const attestation = await signClient.createAttestation({
-            schemaId: schemaId,
-            data: {
-                walletAddress: walletAddress,
-                eligibleToVote: true,
-                registrationTimestamp: Math.floor(Date.now() / 1000)
-            },
-            indexingValue: walletAddress.toLowerCase()
-        });
-        console.log("Voter attestation created successfully");
-        console.log("Attestation ID:", attestation.attestationId);
-        return attestation.attestationId;
+        let result;
+        if (delegationAccount) {
+            const delegationInfo = await delegateSignRevokeAttestation(attestationId, {
+                chain: EvmChains[CHAIN],
+                reason: "Voter eligibility revoked",
+                delegationAccount: delegationAccount,
+            });
+            result = await client.revokeAttestation(delegationInfo.attestationId, {
+                reason: delegationInfo.reason,
+            });
+        } else {
+            result = await client.revokeAttestation(attestationId, {
+                reason: "Voter eligibility revoked"
+            });
+        }
+        console.log("Attestation revoked successfully:", result);
+        return result;
     } catch (error) {
-        console.error("Error creating voter attestation:", error);
+        console.error("Error revoking attestation:", error);
+        throw error;
     }
-}
-
-export async function attestVote(ballotId: number, choice: number, walletAddress: string) {
-    const voteAttestation = await client.createAttestation({
-        schemaId: "voteSchemaId", // Create a new schema for votes
-        data: {
-            ballotId: ballotId,
-            choice: choice,
-            voterAddress: walletAddress
-        },
-        indexingValue: `${ballotId}-${walletAddress}`
-    });
-    return voteAttestation.attestationId;
-}
-
-export async function getVoteAttestations(ballotId: number) {
-    const response = await client.getAttestations({
-        schemaId: "voteSchemaId", // Ensure this schema is created
-        indexingValue: ballotId
-    });
-    return response.data;
 }
