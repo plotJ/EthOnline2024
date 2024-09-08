@@ -10,7 +10,29 @@ import {
 } from '@ethsign/sp-sdk';
 import { privateKeyToAccount, type PrivateKeyAccount } from 'viem/accounts';
 
-const PRIVATE_KEY = process.env.WALLET_PRIVATE_KEY as `0x${string}`;
+function normalizePrivateKey(key: string): `0x${string}` {
+    // Remove any whitespace
+    key = key.trim();
+    
+    // If the key doesn't start with '0x', add it
+    if (!key.startsWith('0x')) {
+        key = '0x' + key;
+    }
+    
+    // Ensure the key is the correct length (32 bytes = 64 characters + '0x')
+    if (key.length !== 66) {
+        throw new Error('Invalid private key length');
+    }
+    
+    // Verify that the key only contains valid hexadecimal characters
+    if (!/^0x[0-9a-fA-F]{64}$/.test(key)) {
+        throw new Error('Invalid private key format');
+    }
+    
+    return key as `0x${string}`;
+}
+
+const PRIVATE_KEY = normalizePrivateKey(process.env.WALLET_PRIVATE_KEY || '');
 const CHAIN = process.env.CHAIN_ID as keyof typeof EvmChains;
 
 if (!PRIVATE_KEY || !CHAIN) {
@@ -134,6 +156,30 @@ export async function revokeVoterAttestation(attestationId: string, delegationAc
         return result;
     } catch (error) {
         console.error("Error revoking attestation:", error);
+        throw error;
+    }
+}
+
+export async function getVoteAttestations(walletAddress: string) {
+    if (!walletAddress || typeof walletAddress !== 'string' || walletAddress.trim() === '') {
+        throw new Error('Invalid walletAddress: must be a non-empty string');
+    }
+
+    try {
+        const normalizedAddress = walletAddress.toLowerCase().trim();
+        const attestations = await client.getAttestations({
+            indexingValue: normalizedAddress
+        });
+
+        if (!attestations || attestations.length === 0) {
+            console.log("No attestations found for the given wallet address");
+            return [];
+        }
+
+        console.log(`Found ${attestations.length} attestation(s) for the wallet address`);
+        return attestations;
+    } catch (error) {
+        console.error("Error fetching vote attestations:", error);
         throw error;
     }
 }
